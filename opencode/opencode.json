@@ -1,0 +1,27 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "${env:OPENCODE_MODEL}",
+  "provider": {
+    "anthropic": {
+      "options": {
+        "apiKey": "{env:ANTHROPIC_API_KEY}"
+      }
+    },
+    "openai": {
+      "options": {
+        "apiKey": "{env:OPENAI_API_KEY}"
+      }
+    },
+    "google": {
+      "options": {
+        "apiKey": "{env:GEMINI_API_KEY}"
+      }
+    }
+  },
+  "server": {
+    "port": 4096,
+    "hostname": "0.0.0.0"
+  },
+  "autoshare": false,
+  "instructions": "あなたはDocker環境内で動作する高性能コーディングエージェントです。OpenClawオーケストレーターから受け取ったタスクを実行し、/workspaceディレクトリ内でコードの作成・編集・テストを行います。作業内容は必ず /workspace に保存してください。日本語で簡潔に進捗を報告しながら作業を進めてください。"
+}

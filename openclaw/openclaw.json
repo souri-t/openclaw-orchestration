@@ -1,0 +1,87 @@
+// OpenClaw Gateway 設定ファイル (JSON5形式)
+// 変更後は Gateway を再起動してください: docker compose restart openclaw-gateway
+{
+  // ===================================================================
+  // Gateway 設定
+  // ===================================================================
+  gateway: {
+    port: 18789,
+    // Docker内から外部アクセス可能にするため 0.0.0.0 にバインド
+    bind: "lan",
+    auth: {
+      // 環境変数 OPENCLAW_GATEWAY_TOKEN で認証
+      mode: "token",
+    },
+    // 未設定チャネルでも起動可能にする
+    allowUnconfigured: true,
+  },
+
+  // ===================================================================
+  // エージェントデフォルト設定
+  // ===================================================================
+  agents: {
+    defaults: {
+      // OpenCodeコンテナが別途サンドボックス役を担うため、
+      // OpenClaw側のDockerサンドボックスは無効に設定
+      sandbox: {
+        mode: "off",
+      },
+      // デフォルトモデル (LLMプロバイダーのキーが必要)
+      // model: "anthropic/claude-sonnet-4-5",
+    },
+  },
+
+  // ===================================================================
+  // スキル設定
+  // ===================================================================
+  skills: {
+    entries: {
+      // opencode-agent スキルの有効化と設定
+      "opencode-agent": {
+        enabled: true,
+        // OpenCodeサーバーの接続情報は環境変数から注入
+        // OPENCODE_SERVER_URL: "http://opencode-server:4096"
+        // OPENCODE_SERVER_PASSWORD: 環境変数参照
+      },
+    },
+    load: {
+      // スキルファイルの変更を自動検出
+      watch: true,
+      watchDebounceMs: 250,
+      // カスタムスキルの追加読み込みディレクトリ
+      extraDirs: [
+        "/home/node/.openclaw/skills",
+      ],
+    },
+  },
+
+  // ===================================================================
+  // ツール設定
+  // ===================================================================
+  tools: {
+    // exec ツールを許可 (OpenCode APIへのcurl実行に必要)
+    exec: {
+      enabled: true,
+    },
+    // Webブラウジングを許可 (オプション)
+    browser: {
+      enabled: false,
+    },
+  },
+
+  // ===================================================================
+  // チャネル設定 (必要なチャネルのみコメントを外して設定)
+  // ===================================================================
+  // channels: {
+  //   slack: {
+  //     botToken: "{env:SLACK_BOT_TOKEN}",
+  //     appToken: "{env:SLACK_APP_TOKEN}",
+  //   },
+  //   discord: {
+  //     token: "{env:DISCORD_TOKEN}",
+  //   },
+  //   telegram: {
+  //     token: "{env:TELEGRAM_BOT_TOKEN}",
+  //   },
+  // },
+}

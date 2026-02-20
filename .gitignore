@@ -1,0 +1,25 @@
+# 機密情報
+.env
+
+# Docker volumes (ローカルマウントのキャッシュ)
+.docker/
+
+# OpenClaw ローカルデータ (volume以外にホストマウントする場合)
+openclaw-data/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# テスト出力
+projects/test-output.txt
+
+# IDE
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# ログ
+*.log
