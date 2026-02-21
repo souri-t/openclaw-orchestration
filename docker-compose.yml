@@ -19,6 +19,15 @@ services:
     container_name: openclaw-gateway
     restart: unless-stopped
     init: true
+    # bind mountで /home/node/.openclaw が root:root になるため
+    # root で起動 → chown → node ユーザーに切り替えて gateway 起動
+    user: root
+    entrypoint:
+      - sh
+      - -c
+      - |
+        chown -R node:node /home/node/.openclaw
+        exec runuser -u node -- node /app/openclaw.mjs gateway --allow-unconfigured
     environment:
       HOME: /home/node
       TERM: xterm-256color
@@ -38,8 +47,6 @@ services:
       - ./openclaw/openclaw.json:/home/node/.openclaw/openclaw.json:ro
       # カスタムスキルをマウント
       - ./openclaw/skills:/home/node/.openclaw/skills:ro
-      # 永続化: セッション・履歴
-      - openclaw-data:/home/node/.openclaw
       # プロジェクトをOpenClawから参照可能に (読み取り専用)
       - ./projects:/home/node/projects:ro
     ports:
@@ -125,10 +132,6 @@ networks:
 # ボリューム
 # =============================================================================
 volumes:
-  # OpenClaw の永続データ (セッション・履歴・スキル状態)
-  openclaw-data:
-    name: openclaw-orchestration_openclaw-data
-
   # OpenCode の永続データ (セッション履歴・SQLite DB)
   opencode-data:
     name: openclaw-orchestration_opencode-data
