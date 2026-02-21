@@ -39,7 +39,15 @@ info "Docker Compose: OK ($(docker compose version --short))"
 
 # 2. openclaw.json の準備とトークン生成
 _token_current() {
-  grep -o '"token": "[^"]*"' openclaw/openclaw.json 2>/dev/null | head -1 | sed 's/"token": "//;s/"//'
+  python3 -c "
+import json, sys
+try:
+    with open('openclaw/openclaw.json') as f:
+        d = json.load(f)
+    print(d.get('gateway', {}).get('auth', {}).get('token', ''))
+except Exception as e:
+    sys.exit(0)
+" 2>/dev/null || true
 }
 
 # テンプレートから openclaw.json を生成 (未存在の場合)
@@ -163,6 +171,10 @@ docker compose exec openclaw-gateway node /app/openclaw.mjs configure --section 
 
 # 10. 完了メッセージ
 _OC_TOKEN=$(_token_current)
+if [ -z "${_OC_TOKEN}" ]; then
+  warn "トークンの取得に失敗しました。openclaw/openclaw.json の gateway.auth.token を直接確認してください。"
+  _OC_TOKEN="<token>"
+fi
 echo ""
 echo "====================================================================="
 echo "  セットアップ完了！"
