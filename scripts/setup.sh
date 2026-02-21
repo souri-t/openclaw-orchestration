@@ -40,13 +40,29 @@ info "Docker Compose: OK ($(docker compose version --short))"
 # 2. openclaw.json の準備とトークン生成
 _token_current() {
   python3 -c "
-import json, sys
+import json, re, sys
+path = 'openclaw/openclaw.json'
 try:
-    with open('openclaw/openclaw.json') as f:
-        d = json.load(f)
-    print(d.get('gateway', {}).get('auth', {}).get('token', ''))
-except Exception as e:
-    sys.exit(0)
+    with open(path) as f:
+        raw = f.read()
+    # configure が改行を埋め込むことがあるため前処理で除去してからパース
+    cleaned = re.sub(r'(\"token\":\s*\")([^\"]*?)(\")', lambda m: m.group(1) + m.group(2).replace('\\n','').strip() + m.group(3), raw)
+    d = json.loads(cleaned)
+    token = d.get('gateway', {}).get('auth', {}).get('token', '')
+    if token:
+        print(token.strip())
+        sys.exit(0)
+except Exception:
+    pass
+# フォールバック: 正規表現で直接抽出
+try:
+    with open(path) as f:
+        raw = f.read()
+    m = re.search(r'\"token\":\s*\"([0-9a-f\\n]+)\"', raw)
+    if m:
+        print(m.group(1).strip())
+except Exception:
+    pass
 " 2>/dev/null || true
 }
 
