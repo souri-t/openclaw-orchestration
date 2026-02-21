@@ -1,30 +1,26 @@
 # OpenCode カスタムサーバーイメージ
-# ベース: 公式OpenCodeイメージ + 開発ツール追加
+# ベース: 公式OpenCodeイメージ (Alpine Linux) + 開発ツール追加
 FROM ghcr.io/anomalyco/opencode:latest
 
-# 追加開発ツールのインストール (root で実行)
-USER root
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# 追加開発ツールのインストール (Alpine は apk を使用)
+RUN apk add --no-cache \
     git \
     curl \
     wget \
     jq \
     ripgrep \
-    fd-find \
-    build-essential \
+    fd \
+    build-base \
     python3 \
-    python3-pip \
-    python3-venv \
-    golang-go \
-    && rm -rf /var/lib/apt/lists/*
+    py3-pip \
+    go \
+    bash
 
-# Node.js / npm は公式イメージに含まれているが、pnpm / bun を追加
-RUN npm install -g pnpm@latest bun@latest --ignore-scripts 2>/dev/null || true
+# Node.js / npm は公式イメージに含まれているが、pnpm を追加
+RUN npm install -g pnpm@latest --ignore-scripts 2>/dev/null || true
 
-# ワークスペースディレクトリ
-RUN mkdir -p /workspace && chown -R node:node /workspace 2>/dev/null || \
-    mkdir -p /workspace
+# ワークスペースディレクトリ (root で実行)
+RUN mkdir -p /workspace
 
 WORKDIR /workspace
 
