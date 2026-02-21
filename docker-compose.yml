@@ -25,6 +25,7 @@ services:
       # Gateway認証
       OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN}
       # LLMプロバイダーキー (スキル実行に使用)
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       GEMINI_API_KEY: ${GEMINI_API_KEY}
@@ -68,6 +69,7 @@ services:
     restart: unless-stopped
     environment:
       # LLMプロバイダー
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       GEMINI_API_KEY: ${GEMINI_API_KEY}
