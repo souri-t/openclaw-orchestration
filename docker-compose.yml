@@ -85,7 +85,7 @@ services:
       # 開発対象プロジェクト (読み書き可)
       - ./projects:/workspace/projects:rw
       # OpenCode の内部状態を永続化 (セッション履歴など)
-      - opencode-data:/root/.local/share/opencode
+      - ./opencode-data:/root/.local/share/opencode
     working_dir: /workspace
     ports:
       # 外部から直接アクセスしたい場合にコメントを外す
@@ -117,10 +117,4 @@ networks:
     name: openclaw-net
     driver: bridge
 
-# =============================================================================
-# ボリューム
-# =============================================================================
-volumes:
-  # OpenCode の永続データ (セッション履歴・SQLite DB)
-  opencode-data:
-    name: openclaw-orchestration_opencode-data
+

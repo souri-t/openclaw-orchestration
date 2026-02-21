@@ -121,7 +121,7 @@ else
 fi
 
 # 5. 必要なディレクトリ作成
-mkdir -p projects openclaw/agents
+mkdir -p projects openclaw/agents opencode-data
 info "projects/ / openclaw/agents/ ディレクトリを確認しました。"
 
 # 6. Docker イメージのビルド

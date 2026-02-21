@@ -18,6 +18,9 @@ openclaw/identity/
 openclaw/logs/
 openclaw/update-check.json
 
+# OpenCode 内部状態 (セッション履歴・SQLite DB)
+opencode-data/
+
 # Docker volumes (ローカルマウントのキャッシュ)
 .docker/
 
