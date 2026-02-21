@@ -75,7 +75,7 @@ with open(path, "w") as f:
     f.write("\n")
 print("allowedOrigins updated:", sorted(origins))
 PYEOF
-info "allowedOrigins を更新しました ($HOST / $HOST.local)。"
+info "allowedOrigins を更新しました ($_HOST / $_HOST.local)。"
 
 # 3. .env の自動生成 (OpenCode 専用)
 _gen_env() {
