@@ -6,14 +6,12 @@
   // ===================================================================
   gateway: {
     port: 18789,
-    // Docker内から外部アクセス可能にするため 0.0.0.0 にバインド
+    // Docker内から外部アクセス可能にするため lan にバインド
     bind: "lan",
     auth: {
       // 環境変数 OPENCLAW_GATEWAY_TOKEN で認証
       mode: "token",
     },
-    // 未設定チャネルでも起動可能にする
-    allowUnconfigured: true,
   },
 
   // ===================================================================
@@ -26,8 +24,6 @@
       sandbox: {
         mode: "off",
       },
-      // デフォルトモデル (LLMプロバイダーのキーが必要)
-      // model: "anthropic/claude-sonnet-4-5",
     },
   },
 
@@ -39,9 +35,6 @@
       // opencode-agent スキルの有効化と設定
       "opencode-agent": {
         enabled: true,
-        // OpenCodeサーバーの接続情報は環境変数から注入
-        // OPENCODE_SERVER_URL: "http://opencode-server:4096"
-        // OPENCODE_SERVER_PASSWORD: 環境変数参照
       },
     },
     load: {
@@ -52,20 +45,6 @@
       extraDirs: [
         "/home/node/.openclaw/skills",
       ],
-    },
-  },
-
-  // ===================================================================
-  // ツール設定
-  // ===================================================================
-  tools: {
-    // exec ツールを許可 (OpenCode APIへのcurl実行に必要)
-    exec: {
-      enabled: true,
-    },
-    // Webブラウジングを許可 (オプション)
-    browser: {
-      enabled: false,
     },
   },
 
