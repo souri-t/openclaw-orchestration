@@ -7,6 +7,16 @@ openclaw/agents/main/
 
 # openclaw.json は setup.sh がテンプレートから生成するため除外 (トークンを含む)
 openclaw/openclaw.json
+openclaw/openclaw.json.bak
+openclaw/openclaw.json.bak.*
+
+# configure / runtime 時に自動生成される OpenClaw ローカルデータ
+openclaw/canvas/
+openclaw/cron/
+openclaw/devices/
+openclaw/identity/
+openclaw/logs/
+openclaw/update-check.json
 
 # Docker volumes (ローカルマウントのキャッシュ)
 .docker/

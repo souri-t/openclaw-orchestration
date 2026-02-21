@@ -54,6 +54,29 @@ if [[ "$(_token_current)" == "__OPENCLAW_TOKEN_PLACEHOLDER__" ]] || [ -z "$(_tok
   info "OpenClaw トークンを openclaw.json に設定しました。"
 fi
 
+# allowedOrigins にホスト名を追加 (ローカルネットワークからのアクセスに対応)
+_HOST=$(hostname -s 2>/dev/null || hostname)
+python3 - << PYEOF
+import json, subprocess
+path = "openclaw/openclaw.json"
+with open(path) as f:
+    data = json.load(f)
+
+host = "${_HOST}"
+origins = {
+    "http://localhost:18789",
+    f"http://{host}:18789",
+    f"http://{host}.local:18789",
+}
+data.setdefault("gateway", {}).setdefault("controlUi", {})["allowedOrigins"] = sorted(origins)
+
+with open(path, "w") as f:
+    json.dump(data, f, indent=2)
+    f.write("\n")
+print("allowedOrigins updated:", sorted(origins))
+PYEOF
+info "allowedOrigins を更新しました ($HOST / $HOST.local)。"
+
 # 3. .env の自動生成 (OpenCode 専用)
 _gen_env() {
   local api_key="$1" pass
