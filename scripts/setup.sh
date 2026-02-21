@@ -159,7 +159,7 @@ echo "  OpenClaw エージェントのモデル / API キーを設定します"
 echo "  ウィザードに従って入力してください"
 echo "====================================================================="
 echo ""
-docker compose exec openclaw-gateway node /app/openclaw.mjs configure --section model
+docker compose exec openclaw-gateway node /app/openclaw.mjs configure --section model || true
 
 # 10. 完了メッセージ
 _OC_TOKEN=$(_token_current)
