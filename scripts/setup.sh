@@ -39,31 +39,35 @@ info "Docker Compose: OK ($(docker compose version --short))"
 
 # 2. openclaw.json の準備とトークン生成
 _token_current() {
-  python3 -c "
+  python3 - << 'PYEOF' 2>/dev/null || true
 import json, re, sys
 path = 'openclaw/openclaw.json'
 try:
-    with open(path) as f:
+    with open(path, encoding='utf-8') as f:
         raw = f.read()
-    # configure が改行を埋め込むことがあるため前処理で除去してからパース
-    cleaned = re.sub(r'(\"token\":\s*\")([^\"]*?)(\")', lambda m: m.group(1) + m.group(2).replace('\\n','').strip() + m.group(3), raw)
+    # トークン値内のあらゆる制御文字(改行・CR・タブ等)を除去してからJSONパース
+    cleaned = re.sub(
+        r'("token":\s*")([^"]*?)(")',
+        lambda m: m.group(1) + re.sub(r'[\x00-\x1f\x7f]', '', m.group(2)).strip() + m.group(3),
+        raw, flags=re.DOTALL
+    )
     d = json.loads(cleaned)
-    token = d.get('gateway', {}).get('auth', {}).get('token', '')
+    token = d.get('gateway', {}).get('auth', {}).get('token', '').strip()
     if token:
-        print(token.strip())
+        print(token)
         sys.exit(0)
 except Exception:
     pass
-# フォールバック: 正規表現で直接抽出
+# フォールバック: 正規表現で16進数トークンを直接抽出
 try:
-    with open(path) as f:
+    with open(path, encoding='utf-8') as f:
         raw = f.read()
-    m = re.search(r'\"token\":\s*\"([0-9a-f\\n]+)\"', raw)
+    m = re.search(r'"token":\s*"([0-9a-fA-F]+)', raw)
     if m:
         print(m.group(1).strip())
 except Exception:
     pass
-" 2>/dev/null || true
+PYEOF
 }
 
 # テンプレートから openclaw.json を生成 (未存在の場合)
@@ -74,7 +78,12 @@ fi
 
 if [[ "$(_token_current)" == "__OPENCLAW_TOKEN_PLACEHOLDER__" ]] || [ -z "$(_token_current)" ]; then
   _OC_TOKEN=$(openssl rand -hex 32)
-  sed -i.bak 's|"token": "[^"]*"|"token": "'"${_OC_TOKEN}"'"|' openclaw/openclaw.json && rm -f openclaw/openclaw.json.bak
+  # GNU sed (Linux/Raspberry Pi) と BSD sed (macOS) 両対応
+  if sed --version 2>/dev/null | grep -q GNU; then
+    sed -i 's|"token": "[^"]*"|"token": "'"${_OC_TOKEN}"'"|' openclaw/openclaw.json
+  else
+    sed -i '' 's|"token": "[^"]*"|"token": "'"${_OC_TOKEN}"'"|' openclaw/openclaw.json
+  fi
   info "OpenClaw トークンを openclaw.json に設定しました。"
 fi
 
