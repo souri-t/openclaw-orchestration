@@ -1,6 +1,13 @@
 # 機密情報
 .env
 
+# OpenClaw エージェント設定 (APIキーを含むため除外)
+openclaw/agents/main/
+!openclaw/agents/.gitkeep
+
+# openclaw.json は setup.sh がテンプレートから生成するため除外 (トークンを含む)
+openclaw/openclaw.json
+
 # Docker volumes (ローカルマウントのキャッシュ)
 .docker/
 

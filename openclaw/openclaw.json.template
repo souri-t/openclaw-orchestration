@@ -9,8 +9,9 @@
     // Docker内から外部アクセス可能にするため lan にバインド
     bind: "lan",
     auth: {
-      // 環境変数 OPENCLAW_GATEWAY_TOKEN で認証
+      // 認証トークン (setup.sh によって自動生成・設定される)
       mode: "token",
+      token: "__OPENCLAW_TOKEN_PLACEHOLDER__",
     },
     controlUi: {
       // HTTP接続（非HTTPS）でもデバイスペアリングをスキップしてトークン認証のみで接続可能にする
@@ -20,15 +21,10 @@
 
   // ===================================================================
   // エージェント設定
+  // モデル・APIキーは setup.sh 実行時の `openclaw configure` で設定
+  // 設定結果は openclaw/agents/main/agent/auth-profiles.json に保存される
   // ===================================================================
   agents: {
-    // mainエージェントのモデルをOpenRouterに変更
-    list: [
-      {
-        id: "main",
-        model: "openrouter/stepfun/step-3.5-flash:free",
-      },
-    ],
     defaults: {
       // OpenCodeコンテナが別途サンドボックス役を担うため、
       // OpenClaw側のDockerサンドボックスは無効に設定

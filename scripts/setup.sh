@@ -37,58 +37,69 @@ DOCKER_RUNNING=$(docker info >/dev/null 2>&1 && echo "yes" || echo "no")
 info "Docker: OK ($(docker --version | cut -d' ' -f3 | tr -d ','))"
 info "Docker Compose: OK ($(docker compose version --short))"
 
-# 2. .env ファイルの確認
+# 2. openclaw.json の準備とトークン生成
+_token_current() {
+  grep -o 'token: "[^"]*"' openclaw/openclaw.json 2>/dev/null | head -1 | sed 's/token: "//;s/"//'
+}
+
+# テンプレートから openclaw.json を生成 (未存在の場合)
+if [ ! -f "openclaw/openclaw.json" ]; then
+  cp openclaw/openclaw.json.template openclaw/openclaw.json
+  info "openclaw/openclaw.json をテンプレートから生成しました。"
+fi
+
+if [[ "$(_token_current)" == "__OPENCLAW_TOKEN_PLACEHOLDER__" ]] || [ -z "$(_token_current)" ]; then
+  _OC_TOKEN=$(openssl rand -hex 32)
+  sed -i.bak "s|token: \"[^\"]*\"|token: \"${_OC_TOKEN}\"|" openclaw/openclaw.json && rm -f openclaw/openclaw.json.bak
+  info "OpenClaw トークンを openclaw.json に設定しました。"
+fi
+
+# 3. .env の自動生成 (OpenCode 専用)
+_gen_env() {
+  local api_key="$1" pass
+  pass=$(openssl rand -hex 16)
+  cat > .env << ENV_EOF
+# このファイルは setup.sh によって自動生成されました (OpenCode 専用)
+OPENROUTER_API_KEY=$api_key
+OPENCODE_MODEL=openrouter/anthropic/claude-sonnet-4-5
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_REGION=ap-northeast-1
+OPENCODE_SERVER_PASSWORD=$pass
+OPENCODE_SERVER_USERNAME=opencode
+ENV_EOF
+}
+
 if [ ! -f ".env" ]; then
-  warn ".env ファイルが見つかりません。.env.example からコピーします..."
-  cp .env.example .env
-  warn ".env ファイルを編集して必要なAPIキーを設定してください:"
-  warn "  - ANTHROPIC_API_KEY または他のLLMプロバイダーキー"
-  warn "  - OPENCLAW_GATEWAY_TOKEN (セキュリティトークン)"
-  warn "  - OPENCODE_SERVER_PASSWORD (サーバーパスワード)"
   echo ""
-fi
-
-# 3. 必須変数のチェック
-source .env
-
-MISSING_VARS=()
-[ -z "${OPENROUTER_API_KEY:-}" ] && [ -z "${ANTHROPIC_API_KEY:-}" ] && [ -z "${OPENAI_API_KEY:-}" ] && [ -z "${GEMINI_API_KEY:-}" ] && \
-  MISSING_VARS+=("LLMプロバイダーキー (OPENROUTER_API_KEY を推奨。他に ANTHROPIC_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY のいずれか)")
-[ -z "${OPENCLAW_GATEWAY_TOKEN:-}" ] && MISSING_VARS+=("OPENCLAW_GATEWAY_TOKEN")
-[ -z "${OPENCODE_SERVER_PASSWORD:-}" ] && MISSING_VARS+=("OPENCODE_SERVER_PASSWORD")
-
-if [ ${#MISSING_VARS[@]} -gt 0 ]; then
-  warn "以下の環境変数が .env に設定されていません:"
-  for v in "${MISSING_VARS[@]}"; do
-    warn "  - $v"
-  done
-  echo ""
-  warn "セットアップを続行しますが、サービスが正常に起動しない可能性があります。"
-  warn ".env ファイルを編集後、 docker compose up -d で再起動してください。"
-  echo ""
-fi
-
-# 4. セキュリティトークン自動生成 (未設定の場合)
-if [ -z "${OPENCLAW_GATEWAY_TOKEN:-}" ]; then
-  if command -v openssl >/dev/null 2>&1; then
-    TOKEN=$(openssl rand -hex 32)
-    sed -i.bak "s/^OPENCLAW_GATEWAY_TOKEN=.*/OPENCLAW_GATEWAY_TOKEN=${TOKEN}/" .env && rm -f .env.bak
-    info "OPENCLAW_GATEWAY_TOKEN を自動生成しました。"
+  echo "  OpenCode が使用する LLM の API キーを設定します。"
+  echo "  取得: https://openrouter.ai/keys"
+  echo -n "  OPENROUTER_API_KEY > "
+  read -r _api_key
+  _gen_env "$_api_key"
+  info ".env を生成しました。"
+else
+  source .env
+  if [ -z "${OPENROUTER_API_KEY:-}" ] || [[ "${OPENROUTER_API_KEY}" == sk-or-v1-xxx* ]]; then
+    warn "OPENROUTER_API_KEY が未設定です。"
+    echo -n "  OPENROUTER_API_KEY > "
+    read -r _api_key
+    sed -i.bak "s|^OPENROUTER_API_KEY=.*|OPENROUTER_API_KEY=${_api_key}|" .env && rm -f .env.bak
+    info "OPENROUTER_API_KEY を更新しました。"
   fi
-fi
-
-if [ -z "${OPENCODE_SERVER_PASSWORD:-}" ]; then
-  if command -v openssl >/dev/null 2>&1; then
+  source .env
+  if [ -z "${OPENCODE_SERVER_PASSWORD:-}" ] || [[ "${OPENCODE_SERVER_PASSWORD}" == change-me* ]]; then
     PASS=$(openssl rand -hex 16)
-    sed -i.bak "s/^OPENCODE_SERVER_PASSWORD=.*/OPENCODE_SERVER_PASSWORD=${PASS}/" .env && rm -f .env.bak
+    grep -q "^OPENCODE_SERVER_PASSWORD=" .env \
+      && sed -i.bak "s|^OPENCODE_SERVER_PASSWORD=.*|OPENCODE_SERVER_PASSWORD=${PASS}|" .env && rm -f .env.bak \
+      || echo "OPENCODE_SERVER_PASSWORD=${PASS}" >> .env
     info "OPENCODE_SERVER_PASSWORD を自動生成しました。"
   fi
 fi
 
-# 5. projects ディレクトリ
-mkdir -p projects
-touch projects/.gitkeep
-info "projects/ ディレクトリを確認しました。"
+# 5. 必要なディレクトリ作成
+mkdir -p projects openclaw/agents
+info "projects/ / openclaw/agents/ ディレクトリを確認しました。"
 
 # 6. Docker イメージのビルド
 info "OpenCode カスタムイメージをビルドしています (初回は時間がかかります)..."
@@ -96,19 +107,52 @@ docker compose build opencode-server
 
 info "ビルド完了！"
 
+# 7. コンテナ起動
+info "コンテナを起動しています..."
+docker compose up -d
+
+# 8. openclaw-gateway ヘルスチェック待機
+info "openclaw-gateway の起動を待っています..."
+for i in $(seq 1 30); do
+  STATUS=$(docker compose ps openclaw-gateway --format json 2>/dev/null \
+    | python3 -c "import sys,json; rows=[l for l in sys.stdin.read().splitlines() if l.strip()]; print(json.loads(rows[0]).get('Health','') if rows else '')" 2>/dev/null || echo "")
+  if [ "$STATUS" = "healthy" ]; then
+    info "openclaw-gateway: healthy"
+    break
+  fi
+  if [ "$i" -eq 30 ]; then
+    warn "ヘルスチェックタイムアウト。コンテナログを確認してください:"
+    warn "  docker compose logs openclaw-gateway"
+  fi
+  printf "  waiting... (%d/30)\r" "$i"
+  sleep 5
+done
+echo ""
+
+# 9. OpenClaw エージェント モデル設定 (インタラクティブ)
+echo ""
+echo "====================================================================="
+echo "  OpenClaw エージェントのモデル / API キーを設定します"
+echo "  ウィザードに従って入力してください"
+echo "====================================================================="
+echo ""
+docker compose exec openclaw-gateway node /app/openclaw.mjs configure --section model
+
+# 10. 完了メッセージ
+_OC_TOKEN=$(_token_current)
 echo ""
 echo "====================================================================="
 echo "  セットアップ完了！"
 echo "====================================================================="
 echo ""
-echo "  起動コマンド:"
-echo "    docker compose up -d"
-echo ""
 echo "  WebChat UI:"
-echo "    http://localhost:${OPENCLAW_GATEWAY_PORT:-18789}"
+echo "    http://localhost:18789/?token=${_OC_TOKEN}&gatewayUrl=ws://localhost:18789"
 echo ""
-echo "  OpenCode API:"
-echo "    http://localhost:${OPENCODE_SERVER_PORT:-4096}/doc"
+echo "  OpenCode API ドキュメント:"
+echo "    http://localhost:4096/doc"
+echo ""
+echo "  コンテナ再起動:"
+echo "    docker compose restart openclaw-gateway"
 echo ""
 echo "  ログ確認:"
 echo "    docker compose logs -f"

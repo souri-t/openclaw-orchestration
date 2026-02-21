@@ -26,36 +26,27 @@ services:
       - sh
       - -c
       - |
-        # OpenRouter APIキーでagent認証ファイルを生成
-        mkdir -p /home/node/.openclaw/agents/main/agent
-        printf '%s' '{"openrouter":{"apiKey":"'"${OPENROUTER_API_KEY}"'"}}' \
-          > /home/node/.openclaw/agents/main/agent/auth-profiles.json
         chown -R node:node /home/node/.openclaw
         exec runuser -u node -- node /app/openclaw.mjs gateway --allow-unconfigured
     environment:
       HOME: /home/node
       TERM: xterm-256color
-      # Gateway認証
-      OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN}
-      # LLMプロバイダーキー (スキル実行に使用)
-      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
-      GEMINI_API_KEY: ${GEMINI_API_KEY}
-      # OpenCodeサーバー認証情報 (スキルから参照)
+      # OpenCodeサーバー認証情報 (opencode-agent スキルが参照)
       OPENCODE_SERVER_URL: http://opencode-server:4096
       OPENCODE_SERVER_PASSWORD: ${OPENCODE_SERVER_PASSWORD}
       OPENCODE_SERVER_USERNAME: ${OPENCODE_SERVER_USERNAME:-opencode}
     volumes:
-      # OpenClaw 設定
+      # OpenClaw 設定 (openclaw.json は読み取り専用)
       - ./openclaw/openclaw.json:/home/node/.openclaw/openclaw.json:ro
+      # エージェント設定 (configure で保存される auth-profiles.json などを永続化)
+      - ./openclaw/agents:/home/node/.openclaw/agents
       # カスタムスキルをマウント
       - ./openclaw/skills:/home/node/.openclaw/skills:ro
       # プロジェクトをOpenClawから参照可能に (読み取り専用)
       - ./projects:/home/node/projects:ro
     ports:
-      - "${OPENCLAW_GATEWAY_PORT:-18789}:18789"   # WebChat / Gateway / Control UI
-      - "${OPENCLAW_BRIDGE_PORT:-18790}:18790"     # Bridge (ノード接続用)
+      - "18789:18789"   # WebChat / Gateway / Control UI
+      - "18790:18790"   # Bridge (ノード接続用)
     networks:
       - openclaw-net
     depends_on:
@@ -79,11 +70,9 @@ services:
     container_name: opencode-server
     restart: unless-stopped
     environment:
-      # LLMプロバイダー
+      # LLMプロバイダー (OpenRouter経由)
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
-      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      # AWS Bedrock 直接接続する場合
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
       AWS_REGION: ${AWS_REGION:-ap-northeast-1}

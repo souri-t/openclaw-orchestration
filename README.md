@@ -51,25 +51,12 @@ bash scripts/setup.sh
 
 セットアップスクリプトが以下を自動実行します:
 - 前提条件チェック
-- `.env` ファイルの生成 (未存在の場合)
-- セキュリティトークン・パスワードの自動生成
+- `OPENROUTER_API_KEY` の入力 (OpenRouter: https://openrouter.ai/keys)
+- インフラ変数 (トークン・パスワード) の自動生成
 - OpenCode Dockerイメージのビルド
+- コンテナ起動 → OpenClaw モデル設定ウィザード
 
-### 2. .env を編集
-
-```bash
-# .env を開いてAPIキーを設定
-nano .env   # または好みのエディタで
-```
-
-**最低限必要な設定:**
-```env
-ANTHROPIC_API_KEY=sk-ant-xxxxxxxxxxxx    # Anthropic APIキー
-OPENCLAW_GATEWAY_TOKEN=<自動生成済み>
-OPENCODE_SERVER_PASSWORD=<自動生成済み>
-```
-
-### 3. 起動
+### 2. 起動
 
 ```bash
 docker compose up -d
@@ -77,13 +64,43 @@ docker compose up -d
 
 初回起動は OpenCode イメージをビルドするため数分かかります。
 
-### 4. WebChat にアクセス
+### 3. WebChat にアクセス
 
 ブラウザで [http://localhost:18789](http://localhost:18789) を開きます。
 
-**OpenClawの初回セットアップ:**
+**OpenClawの初回セットアップウィザード (CLI):**
+
+コンテナ起動後、インタラクティブなセットアップウィザードを起動できます:
+
+```bash
+docker compose exec openclaw-gateway node /app/openclaw.mjs configure
+```
+
+特定セクションのみ設定する場合:
+
+```bash
+# モデル設定のみ
+docker compose exec openclaw-gateway node /app/openclaw.mjs configure --section model
+
+# チャンネル設定のみ (Slack / Telegram 等)
+docker compose exec openclaw-gateway node /app/openclaw.mjs configure --section channels
+```
+
+利用可能なセクション: `workspace`, `model`, `web`, `gateway`, `daemon`, `channels`, `skills`, `health`
+
+**WebChat のオンボーディングUIを開く:**
+
+ブラウザで以下の URL にアクセスすると、オンボーディング画面が開きます:
+
+```
+http://localhost:18789/?token=<トークン>&gatewayUrl=ws://localhost:18789&onboarding=1
+```
+
+トークンは `setup.sh` 完了時に表示されます。また `openclaw/openclaw.json` の `gateway.auth.token` フィールドで確認できます。
+
+**通常のWebChatアクセス:**
 1. WebChat UIにアクセス
-2. 認証トークン (`.env` の `OPENCLAW_GATEWAY_TOKEN`) を入力
+2. 認証トークン (`openclaw/openclaw.json` の `gateway.auth.token`) を入力 (setup.sh 完了時に URL として表示されます)
 3. チャット画面で以下のように OpenCode-Agent スキルを使って指示します:
 
 ```
@@ -175,10 +192,10 @@ docker compose up -d
 ```
 openclaw-orchestration/
 ├── docker-compose.yml              # サービス定義
-├── .env                            # 環境変数 (gitignore対象)
-├── .env.example                    # 環境変数テンプレート
+├── .env                            # 環境変数 (setup.sh 自動生成 / gitignore対象)
 ├── openclaw/
-│   ├── openclaw.json               # OpenClaw Gateway 設定 (JSON5)
+│   ├── openclaw.json               # OpenClaw Gateway 設定 (setup.sh 生成 / gitignore対象)
+│   ├── openclaw.json.template      # 設定テンプレート (git管理)
 │   └── skills/
 │       └── opencode-agent/
 │           └── SKILL.md            # OpenCode連携スキル定義
@@ -208,7 +225,7 @@ docker compose logs opencode-server
 docker compose build --no-cache opencode-server
 ```
 
-→ `ANTHROPIC_API_KEY` 等が設定されているか `.env` を確認してください。
+→ `OPENROUTER_API_KEY` が `.env` に設定されているか確認してください。スクリプト再実行: `bash scripts/setup.sh`
 
 ### `openclaw-gateway` に WebChat でアクセスできない
 
@@ -220,7 +237,7 @@ docker compose ps
 docker network ls | grep openclaw
 ```
 
-→ `OPENCLAW_GATEWAY_TOKEN` が `.env` に設定されているか確認してください。
+→ `.env` の内容を確認し、必要なら `bash scripts/setup.sh` を再実行してください。
 
 ### OpenCode が応答に時間がかかる
 
