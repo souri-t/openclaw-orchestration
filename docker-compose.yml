@@ -26,6 +26,10 @@ services:
       - sh
       - -c
       - |
+        # OpenRouter APIキーでagent認証ファイルを生成
+        mkdir -p /home/node/.openclaw/agents/main/agent
+        printf '%s' '{"openrouter":{"apiKey":"'"${OPENROUTER_API_KEY}"'"}}' \
+          > /home/node/.openclaw/agents/main/agent/auth-profiles.json
         chown -R node:node /home/node/.openclaw
         exec runuser -u node -- node /app/openclaw.mjs gateway --allow-unconfigured
     environment:

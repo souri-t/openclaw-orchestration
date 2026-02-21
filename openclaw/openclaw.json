@@ -12,12 +12,23 @@
       // 環境変数 OPENCLAW_GATEWAY_TOKEN で認証
       mode: "token",
     },
+    controlUi: {
+      // HTTP接続（非HTTPS）でもデバイスペアリングをスキップしてトークン認証のみで接続可能にする
+      allowInsecureAuth: true,
+    },
   },
 
   // ===================================================================
-  // エージェントデフォルト設定
+  // エージェント設定
   // ===================================================================
   agents: {
+    // mainエージェントのモデルをOpenRouterに変更
+    list: [
+      {
+        id: "main",
+        model: "openrouter/stepfun/step-3.5-flash:free",
+      },
+    ],
     defaults: {
       // OpenCodeコンテナが別途サンドボックス役を担うため、
       // OpenClaw側のDockerサンドボックスは無効に設定
