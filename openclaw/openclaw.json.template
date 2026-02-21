@@ -1,73 +1,34 @@
-// OpenClaw Gateway 設定ファイル (JSON5形式)
-// 変更後は Gateway を再起動してください: docker compose restart openclaw-gateway
 {
-  // ===================================================================
-  // Gateway 設定
-  // ===================================================================
-  gateway: {
-    port: 18789,
-    // Docker内から外部アクセス可能にするため lan にバインド
-    bind: "lan",
-    auth: {
-      // 認証トークン (setup.sh によって自動生成・設定される)
-      mode: "token",
-      token: "__OPENCLAW_TOKEN_PLACEHOLDER__",
+  "gateway": {
+    "port": 18789,
+    "bind": "lan",
+    "auth": {
+      "mode": "token",
+      "token": "__OPENCLAW_TOKEN_PLACEHOLDER__"
     },
-    controlUi: {
-      // HTTP接続（非HTTPS）でもデバイスペアリングをスキップしてトークン認証のみで接続可能にする
-      allowInsecureAuth: true,
-    },
+    "controlUi": {
+      "allowInsecureAuth": true
+    }
   },
-
-  // ===================================================================
-  // エージェント設定
-  // モデル・APIキーは setup.sh 実行時の `openclaw configure` で設定
-  // 設定結果は openclaw/agents/main/agent/auth-profiles.json に保存される
-  // ===================================================================
-  agents: {
-    defaults: {
-      // OpenCodeコンテナが別途サンドボックス役を担うため、
-      // OpenClaw側のDockerサンドボックスは無効に設定
-      sandbox: {
-        mode: "off",
-      },
-    },
+  "agents": {
+    "defaults": {
+      "sandbox": {
+        "mode": "off"
+      }
+    }
   },
-
-  // ===================================================================
-  // スキル設定
-  // ===================================================================
-  skills: {
-    entries: {
-      // opencode-agent スキルの有効化と設定
+  "skills": {
+    "entries": {
       "opencode-agent": {
-        enabled: true,
-      },
+        "enabled": true
+      }
     },
-    load: {
-      // スキルファイルの変更を自動検出
-      watch: true,
-      watchDebounceMs: 250,
-      // カスタムスキルの追加読み込みディレクトリ
-      extraDirs: [
-        "/home/node/.openclaw/skills",
-      ],
-    },
-  },
-
-  // ===================================================================
-  // チャネル設定 (必要なチャネルのみコメントを外して設定)
-  // ===================================================================
-  // channels: {
-  //   slack: {
-  //     botToken: "{env:SLACK_BOT_TOKEN}",
-  //     appToken: "{env:SLACK_APP_TOKEN}",
-  //   },
-  //   discord: {
-  //     token: "{env:DISCORD_TOKEN}",
-  //   },
-  //   telegram: {
-  //     token: "{env:TELEGRAM_BOT_TOKEN}",
-  //   },
-  // },
+    "load": {
+      "watch": true,
+      "watchDebounceMs": 250,
+      "extraDirs": [
+        "/home/node/.openclaw/skills"
+      ]
+    }
+  }
 }

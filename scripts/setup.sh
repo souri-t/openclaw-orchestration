@@ -39,7 +39,7 @@ info "Docker Compose: OK ($(docker compose version --short))"
 
 # 2. openclaw.json の準備とトークン生成
 _token_current() {
-  grep -o 'token: "[^"]*"' openclaw/openclaw.json 2>/dev/null | head -1 | sed 's/token: "//;s/"//'
+  grep -o '"token": "[^"]*"' openclaw/openclaw.json 2>/dev/null | head -1 | sed 's/"token": "//;s/"//'
 }
 
 # テンプレートから openclaw.json を生成 (未存在の場合)
@@ -50,7 +50,7 @@ fi
 
 if [[ "$(_token_current)" == "__OPENCLAW_TOKEN_PLACEHOLDER__" ]] || [ -z "$(_token_current)" ]; then
   _OC_TOKEN=$(openssl rand -hex 32)
-  sed -i.bak "s|token: \"[^\"]*\"|token: \"${_OC_TOKEN}\"|" openclaw/openclaw.json && rm -f openclaw/openclaw.json.bak
+  sed -i.bak 's|"token": "[^"]*"|"token": "'"${_OC_TOKEN}"'"|' openclaw/openclaw.json && rm -f openclaw/openclaw.json.bak
   info "OpenClaw トークンを openclaw.json に設定しました。"
 fi
 

@@ -36,8 +36,8 @@ services:
       OPENCODE_SERVER_PASSWORD: ${OPENCODE_SERVER_PASSWORD}
       OPENCODE_SERVER_USERNAME: ${OPENCODE_SERVER_USERNAME:-opencode}
     volumes:
-      # OpenClaw 設定 (openclaw.json は読み取り専用)
-      - ./openclaw/openclaw.json:/home/node/.openclaw/openclaw.json:ro
+      # OpenClaw 設定 (configure コマンドが書き込むため読み書き可)
+      - ./openclaw/openclaw.json:/home/node/.openclaw/openclaw.json
       # エージェント設定 (configure で保存される auth-profiles.json などを永続化)
       - ./openclaw/agents:/home/node/.openclaw/agents
       # カスタムスキルをマウント
