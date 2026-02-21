@@ -17,6 +17,7 @@ openclaw/devices/
 openclaw/identity/
 openclaw/logs/
 openclaw/update-check.json
+openclaw/workspace/
 
 # OpenCode 内部状態 (セッション履歴・SQLite DB)
 opencode-data/

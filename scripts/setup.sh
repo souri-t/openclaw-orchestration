@@ -153,9 +153,18 @@ else
   fi
 fi
 
+# _fix_permissions: コンテナが root/node で作成したファイルをホストユーザーに戻す
+# macOS は Docker Desktop が透過的に処理するが Linux (Raspberry Pi) では必須
+_fix_permissions() {
+  docker run --rm \
+    -v "$(pwd)/openclaw:/fix/openclaw" \
+    -v "$(pwd)/opencode-data:/fix/opencode-data" \
+    alpine sh -c "chown -R $(id -u):$(id -g) /fix/openclaw /fix/opencode-data" 2>/dev/null || true
+}
+
 # 5. 必要なディレクトリ作成
 mkdir -p projects openclaw/agents opencode-data
-info "projects/ / openclaw/agents/ ディレクトリを確認しました。"
+info "projects/ / openclaw/agents/ / opencode-data/ ディレクトリを確認しました。"
 
 # 6. Docker イメージのビルド
 info "OpenCode カスタムイメージをビルドしています (初回は時間がかかります)..."
@@ -166,6 +175,9 @@ info "ビルド完了！"
 # 7. コンテナ起動
 info "コンテナを起動しています..."
 docker compose up -d
+
+# 権限修正 (Linux/Raspberry Pi 向け)
+_fix_permissions
 
 # 8. openclaw-gateway ヘルスチェック待機
 info "openclaw-gateway の起動を待っています..."
@@ -193,6 +205,9 @@ echo "  ウィザードに従って入力してください"
 echo "====================================================================="
 echo ""
 docker compose exec openclaw-gateway node /app/openclaw.mjs configure --section model || true
+
+# configure がファイルを書き換えた後に権限を再修正
+_fix_permissions
 
 # 10. 完了メッセージ
 _OC_TOKEN=$(_token_current)
